@@ -315,7 +315,7 @@ export const AuthService = {
    *
    * @param vprResult {object} - VPR Query result from a user's wallet.
    */
-  loginUserByXRWallet: async (vprResult: any) => {
+  async loginUserByXRWallet(vprResult: any) {
     try {
       dispatchAction(AuthAction.actionProcessing({ processing: true }))
 

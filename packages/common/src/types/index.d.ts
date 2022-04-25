@@ -1,0 +1,6 @@
+declare module '@digitalcredentials/did-method-key'
+declare module '@digitalbazaar/security-document-loader'
+declare module '@interop/did-web-resolver'
+declare module '@digitalcredentials/bnid'
+declare module 'crypto-ld'
+declare module '@digitalcredentials/vc'

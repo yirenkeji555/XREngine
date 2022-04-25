@@ -42,6 +42,7 @@
     "update-name-gh-package": "node scripts/update-name-gh-package.js"
   },
   "dependencies": {
+    "@digitalcredentials/vc": "^1.1.2",
     "@feathersjs/authentication": "5.0.0-pre.10",
     "@feathersjs/authentication-local": "5.0.0-pre.10",
     "@feathersjs/authentication-oauth": "5.0.0-pre.10",
