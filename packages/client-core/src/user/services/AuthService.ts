@@ -244,7 +244,7 @@ export const AuthService = {
     try {
       const client = API.instance.client
       const res: any = await client.service('user').get(userId)
-      if (res.user_setting == null) {
+      if (!res.user_setting) {
         const settingsRes = (await client
           .service('user-settings')
           .find({ query: { userId: userId } })) as Paginated<UserSetting>
