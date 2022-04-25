@@ -170,7 +170,7 @@ export const AuthServiceReceptor = (action) => {
 export const accessAuthState = () => getState(AuthState)
 export const useAuthState = () => useState(accessAuthState())
 
-//Service
+// Service
 export const AuthService = {
   doLoginAuto: async (forceClientAuthReset?: boolean) => {
     try {
@@ -178,13 +178,16 @@ export const AuthService = {
       let accessToken =
         forceClientAuthReset !== true && authData && authData.authUser ? authData.authUser.accessToken : undefined
 
-      if (forceClientAuthReset === true) await API.instance.client.authentication.reset()
-      if (accessToken == null || accessToken.length === 0) {
+      if (forceClientAuthReset === true) {
+        await API.instance.client.authentication.reset()
+      }
+      if (!accessToken) {
         const newProvider = await API.instance.client.service('identity-provider').create({
           type: 'guest',
           token: v1()
         })
         accessToken = newProvider.accessToken
+        console.log(`Created new guest accessToken: ${accessToken}`)
       }
 
       await API.instance.client.authentication.setAccessToken(accessToken as string)
@@ -223,7 +226,7 @@ export const AuthService = {
         // Should dispatch
         dispatchAction(AuthAction.loginUserSuccessAction({ authUser, message: '' }))
 
-        await AuthService.loadUserData(authUser.identityProvider.userId)
+        await AuthService.loadUserData(authUser.identityProvider?.userId)
       } else {
         console.log('****************')
       }
@@ -237,46 +240,29 @@ export const AuthService = {
       // }
     }
   },
-  loadUserData: (userId: string): any => {
-    return API.instance.client
-      .service('user')
-      .get(userId)
-      .then((res: any) => {
-        if (res.user_setting == null) {
-          return API.instance.client
-            .service('user-settings')
-            .find({
-              query: {
-                userId: userId
-              }
-            })
-            .then((settingsRes: Paginated<UserSetting>) => {
-              if (settingsRes.total === 0) {
-                return API.instance.client
-                  .service('user-settings')
-                  .create({
-                    userId: userId
-                  })
-                  .then((newSettings) => {
-                    res.user_setting = newSettings
+  async loadUserData(userId: string) {
+    try {
+      const client = API.instance.client
+      const res: any = await client.service('user').get(userId)
+      if (res.user_setting == null) {
+        const settingsRes = (await client
+          .service('user-settings')
+          .find({ query: { userId: userId } })) as Paginated<UserSetting>
 
-                    return Promise.resolve(res)
-                  })
-              }
-              res.user_setting = settingsRes.data[0]
-              return Promise.resolve(res)
-            })
+        if (settingsRes.total === 0) {
+          res.user_setting = await client.service('user-settings').create({ userId: userId })
+        } else {
+          res.user_setting = settingsRes.data[0]
         }
-        return Promise.resolve(res)
-      })
-      .then((res: any) => {
-        const user = resolveUser(res)
-        dispatchAction(AuthAction.loadedUserDataAction({ user }))
-      })
-      .catch((err: any) => {
-        NotificationService.dispatchNotify(i18n.t('common:error.loading-error'), { variant: 'error' })
-      })
+        return res
+      }
+      const user = resolveUser(res)
+      dispatchAction(AuthAction.loadedUserDataAction({ user }))
+    } catch (err) {
+      NotificationService.dispatchNotify(i18n.t('common:error.loading-error'), { variant: 'error' })
+    }
   },
+
   loginUserByPassword: async (form: EmailLoginForm) => {
     // check email validation.
     if (!validateEmail(form.email)) {
@@ -297,7 +283,7 @@ export const AuthService = {
       .then((res: any) => {
         const authUser = resolveAuthUser(res)
 
-        if (!authUser.identityProvider.isVerified) {
+        if (!authUser.identityProvider?.isVerified) {
           API.instance.client.logout()
 
           dispatchAction(
@@ -316,21 +302,46 @@ export const AuthService = {
       })
       .finally(() => dispatchAction(AuthAction.actionProcessing({ processing: false })))
   },
+
+  /**
+   * Example vprResult:
+   * {
+   *   "type": "web",
+   *   "dataType": "VerifiablePresentation",
+   *   "data": { "presentation": vp }
+   * }
+   * Where `vp` is a VerifiablePresentation containing multiple VCs
+   * (LoginDisplayCredential, UserPreferencesCredential).
+   *
+   * @param vprResult {object} - VPR Query result from a user's wallet.
+   */
   loginUserByXRWallet: async (wallet: any) => {
     try {
       dispatchAction(AuthAction.actionProcessing({ processing: true }))
 
-      const credentials: any = parseUserWalletCredentials(wallet)
+      const credentials: any = parseUserWalletCredentials(vprResult)
       console.log(credentials)
 
       const walletUser = resolveWalletUser(credentials)
+      const authUser = {
+        accessToken: '',
+        authentication: { strategy: 'did-auth' },
+        identityProvider: {
+          id: 0,
+          token: '',
+          type: 'chapiWallet',
+          isVerified: true,
+          userId: walletUser.id
+        }
+      }
 
-      //TODO: This is temp until we move completely to XR wallet
+      // TODO: This is temp until we move completely to XR wallet
       const oldId = accessAuthState().user.id.value
       walletUser.id = oldId
 
       // loadXRAvatarForUpdatedUser(walletUser) // TODO
       dispatchAction(AuthAction.loadedUserDataAction({ user: walletUser }))
+      dispatchAction(AuthAction.loginUserSuccessAction({ authUser: authUser, message: '' }))
     } catch (err) {
       dispatchAction(AuthAction.loginUserErrorAction({ message: i18n.t('common:error.login-error') }))
       NotificationService.dispatchNotify(err.message, { variant: 'error' })
@@ -338,6 +349,7 @@ export const AuthService = {
       dispatchAction(AuthAction.actionProcessing({ processing: false }))
     }
   },
+
   loginUserByOAuth: async (service: string, location: any) => {
     dispatchAction(AuthAction.actionProcessing({ processing: true }))
     const token = accessAuthState().authUser.accessToken.value
@@ -391,7 +403,7 @@ export const AuthService = {
       const authUser = resolveAuthUser(res)
 
       dispatchAction(AuthAction.loginUserSuccessAction({ authUser: authUser, message: '' }))
-      await AuthService.loadUserData(authUser.identityProvider.userId)
+      await AuthService.loadUserData(authUser.identityProvider?.userId)
       dispatchAction(AuthAction.actionProcessing({ processing: false }))
       let timeoutTimer = 0
       // The new JWT does not always get stored in localStorage successfully by this point, and if the user is

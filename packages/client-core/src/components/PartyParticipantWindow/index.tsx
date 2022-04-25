@@ -78,9 +78,7 @@ const PartyParticipantWindow = ({ peerId }: Props): JSX.Element => {
   const userHasInteracted = useEngineState().userHasInteracted
   const selfUser = useAuthState().user.value
   const currentLocation = useLocationState().currentLocation.location
-  const enableGlobalMute =
-    currentLocation?.locationSetting?.locationType?.value === 'showroom' &&
-    selfUser?.locationAdmins?.find((locationAdmin) => currentLocation?.id?.value === locationAdmin.locationId) != null
+  const enableGlobalMute = currentLocation?.locationSetting?.locationType?.value === 'showroom'
   const isScreen = peerId && peerId.startsWith('screen_')
   const userId = isScreen ? peerId!.replace('screen_', '') : peerId
   const user = userState.layerUsers.find((user) => user.id.value === userId)?.attach(Downgraded).value

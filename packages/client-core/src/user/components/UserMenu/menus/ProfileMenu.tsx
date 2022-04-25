@@ -282,7 +282,7 @@ const ProfileMenu = ({ className, hideLogin, changeActiveMenu, setProfileMenuOpe
     // window.location.reload()
   }
 
-  /*  const handleWalletLoginClick = async (e) => {
+  async function handleWalletLoginClick() {
     const domain = window.location.origin
     const challenge = '99612b24-63d9-11ea-b99f-4f66f3e4f81a' // TODO: generate
 
@@ -302,12 +302,12 @@ const ProfileMenu = ({ className, hideLogin, changeActiveMenu, setProfileMenuOpe
       }
     }
 
-    // Use Credential Handler API to authenticate
-    const result: any = await navigator.credentials.get(didAuthQuery)
-    console.log(result)
+    // Use Credential Handler API to authenticate and receive basic login display credentials
+    const vprResult: any = await navigator.credentials.get(didAuthQuery)
+    console.log(vprResult)
 
-    AuthService.loginUserByXRWallet(result)
-  }*/
+    AuthService.loginUserByXRWallet(vprResult)
+  }
 
   const refreshApiKey = () => {
     AuthService.updateApiKey()
@@ -614,13 +614,12 @@ const ProfileMenu = ({ className, hideLogin, changeActiveMenu, setProfileMenuOpe
                 <Typography variant="h3" className={styles.textBlock}>
                   {t('user:usermenu.profile.or')}
                 </Typography>
-                {/*<Button onClick={handleWalletLoginClick} className={styles.walletBtn}>
-                  {t('user:usermenu.profile.lbl-wallet')}
+                <Button onClick={() => handleWalletLoginClick()} className={styles.walletBtn}>
+                  {t('user:usermenu.profile.loginWithXRWallet')}
                 </Button>
-                <br/>*/}
-                <Button onClick={() => changeActiveMenu(Views.ReadyPlayer)} className={styles.walletBtn}>
-                  {t('user:usermenu.profile.loginWithReadyPlayerMe')}
-                </Button>
+                {/*<Button onClick={() => changeActiveMenu(Views.ReadyPlayer)} className={styles.walletBtn}>*/}
+                {/*  {t('user:usermenu.profile.loginWithReadyPlayerMe')}*/}
+                {/*</Button>*/}
               </section>
             )}
 
