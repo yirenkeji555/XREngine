@@ -57,6 +57,7 @@
     "postprocessing": "^6.26.3",
     "react": "17.0.2",
     "rewire": "^6.0.0",
+    "sdp-transform": "^2.14.1",
     "simplex-noise": "^3.0.0",
     "socket.io": "4.4.1",
     "three": "^0.139.0",

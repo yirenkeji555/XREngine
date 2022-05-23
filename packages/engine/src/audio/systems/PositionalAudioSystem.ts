@@ -1,4 +1,6 @@
+import sdpTransform from 'sdp-transform'
 import { Audio as AudioObject } from 'three'
+import { AudioContext } from 'three'
 
 import { addActionReceptor } from '@xrengine/hyperflux'
 
@@ -35,6 +37,119 @@ function createSilentAudioEl(streamsLive) {
   audioEl.srcObject = streamsLive
   audioEl.volume = 0 // we don't actually want to hear audio from this element
   return audioEl
+}
+
+let delayedReconnectTimeout: ReturnType<typeof setTimeout> | null = null
+function performDelayedReconnect(gainNode) {
+  if (delayedReconnectTimeout) {
+    clearTimeout(delayedReconnectTimeout)
+  }
+
+  delayedReconnectTimeout = setTimeout(() => {
+    delayedReconnectTimeout = null
+    console.warn(
+      'enableChromeAEC: recreate RTCPeerConnection loopback because the local connection was disconnected for 10s'
+    )
+    // eslint-disable-next-line no-use-before-define
+    enableChromeAEC(gainNode)
+  }, 10000)
+}
+
+async function enableChromeAEC(gainNode) {
+  /**
+   *  workaround for: https://bugs.chromium.org/p/chromium/issues/detail?id=687574
+   *  1. grab the GainNode from the scene's THREE.AudioListener
+   *  2. disconnect the GainNode from the AudioDestinationNode (basically the audio out), this prevents hearing the audio twice.
+   *  3. create a local webrtc connection between two RTCPeerConnections (see this example: https://webrtc.github.io/samples/src/content/peerconnection/pc1/)
+   *  4. create a new MediaStreamDestination from the scene's THREE.AudioContext and connect the GainNode to it.
+   *  5. add the MediaStreamDestination's track  to one of those RTCPeerConnections
+   *  6. connect the other RTCPeerConnection's stream to a new audio element.
+   *  All audio is now routed through Chrome's audio mixer, thus enabling AEC, while preserving all the audio processing that was performed via the WebAudio API.
+   */
+
+  const audioEl = new Audio()
+  audioEl.setAttribute('autoplay', 'autoplay')
+  audioEl.setAttribute('playsinline', 'playsinline')
+
+  const context = AudioContext.getContext()
+  const loopbackDestination = context.createMediaStreamDestination()
+  const outboundPeerConnection = new RTCPeerConnection()
+  const inboundPeerConnection = new RTCPeerConnection()
+
+  const onError = (e) => {
+    console.error('enableChromeAEC: RTCPeerConnection loopback initialization error', e)
+  }
+
+  outboundPeerConnection.addEventListener('icecandidate', (e) => {
+    if (e?.candidate) inboundPeerConnection.addIceCandidate(e.candidate).catch(onError)
+  })
+  outboundPeerConnection.addEventListener('iceconnectionstatechange', () => {
+    console.warn(
+      'enableChromeAEC: outboundPeerConnection state changed to ' + outboundPeerConnection.iceConnectionState
+    )
+    if (outboundPeerConnection.iceConnectionState === 'disconnected') {
+      performDelayedReconnect(gainNode)
+    }
+    if (outboundPeerConnection.iceConnectionState === 'connected') {
+      if (delayedReconnectTimeout) {
+        // The RTCPeerConnection reconnected by itself, cancel recreating the
+        // local connection.
+        clearTimeout(delayedReconnectTimeout)
+      }
+    }
+  })
+
+  inboundPeerConnection.addEventListener('icecandidate', (e) => {
+    if (e?.candidate) outboundPeerConnection.addIceCandidate(e.candidate).catch(onError)
+  })
+  inboundPeerConnection.addEventListener('iceconnectionstatechange', () => {
+    console.warn('enableChromeAEC: inboundPeerConnection state changed to ' + inboundPeerConnection.iceConnectionState)
+    if (inboundPeerConnection.iceConnectionState === 'disconnected') {
+      performDelayedReconnect(gainNode)
+    }
+    if (inboundPeerConnection.iceConnectionState === 'connected') {
+      if (delayedReconnectTimeout) {
+        // The RTCPeerConnection reconnected by itself, cancel recreating the
+        // local connection.
+        clearTimeout(delayedReconnectTimeout)
+      }
+    }
+  })
+
+  inboundPeerConnection.addEventListener('track', (e) => {
+    audioEl.srcObject = e.streams[0]
+  })
+
+  try {
+    //The following should never fail, but just in case, we won't disconnect/reconnect the gainNode unless all of this succeeds
+    loopbackDestination.stream.getTracks().forEach((track) => {
+      outboundPeerConnection.addTrack(track, loopbackDestination.stream)
+    })
+
+    const offer = await outboundPeerConnection.createOffer()
+    outboundPeerConnection.setLocalDescription(offer)
+    await inboundPeerConnection.setRemoteDescription(offer)
+
+    const answer = await inboundPeerConnection.createAnswer()
+
+    // Rewrite SDP to be stereo and (variable) max bitrate
+    const parsedSdp = sdpTransform.parse(answer.sdp)
+    for (let i = 0; i < parsedSdp.media.length; i++) {
+      for (let j = 0; j < parsedSdp.media[i].fmtp.length; j++) {
+        parsedSdp.media[i].fmtp[j].config += `;stereo=1;cbr=0;maxaveragebitrate=510000;`
+      }
+    }
+    answer.sdp = sdpTransform.write(parsedSdp)
+
+    inboundPeerConnection.setLocalDescription(answer)
+    outboundPeerConnection.setRemoteDescription(answer)
+
+    gainNode.disconnect()
+    gainNode.connect(loopbackDestination)
+    console.log('gainNode connected', gainNode)
+  } catch (e) {
+    onError(e)
+  }
 }
 
 /** System class which provides methods for Positional Audio system. */
@@ -110,8 +225,8 @@ export default async function PositionalAudioSystem(world: World) {
       }
 
       const props = applyMediaAudioSettings(SCENE_COMPONENT_AUDIO_DEFAULT_VALUES)
-      // addComponent(entity, AudioComponent, props)
-      // updateAudio(entity, props)
+      addComponent(entity, AudioComponent, props)
+      updateAudio(entity, props)
     }
 
     for (const entity of avatarAudioQuery.exit()) {
@@ -137,11 +252,8 @@ export default async function PositionalAudioSystem(world: World) {
       avatarAudioStream.set(entity, consumerLive)
       const streamsLive = new MediaStream([consumerLive.clone()])
 
-      if (SHOULD_CREATE_SILENT_AUDIO_ELS) {
-        createSilentAudioEl(streamsLive) // TODO: Do the audio els need to get cleaned up?
-      }
-
       const avatarAudio = getComponent(entity, Object3DComponent)?.value
+      console.log('avatarAudio', avatarAudio)
 
       if (avatarAudio) {
         const audioEl = avatarAudio.userData.audioEl as AudioObject
@@ -150,6 +262,10 @@ export default async function PositionalAudioSystem(world: World) {
           if (audioEl.context.state === 'suspended') audioEl.context.resume()
 
           audioEl.setNodeSource(audioStreamSource as unknown as AudioBufferSourceNode)
+
+          if (SHOULD_CREATE_SILENT_AUDIO_ELS) {
+            enableChromeAEC(audioEl.gain) // TODO: Do the audio els need to get cleaned up?
+          }
         }
       }
     }
