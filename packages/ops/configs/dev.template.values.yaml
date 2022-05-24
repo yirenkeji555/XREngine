@@ -92,6 +92,7 @@ api:
     AWS_SMS_REGION: us-east-1
     AWS_SMS_SECRET_ACCESS_KEY: <SNS_USER_ACCESS_KEY>
     AWS_SMS_TOPIC_ARN: <SNS_TOPIC_ARN>
+    ELASTIC_HOST: "http://localhost:9200"
     CERT: certs/cert.pem
     KEY: certs/key.pem
     FACEBOOK_CALLBACK_URL: https://dev.<domain>/auth/oauth/facebook

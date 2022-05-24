@@ -94,6 +94,7 @@ api:
     AWS_SMS_SECRET_ACCESS_KEY: <SNS_USER_ACCESS_KEY>
     AWS_SMS_TOPIC_ARN: <SNS_TOPIC_ARN>
     CLIENT_ENABLED: "false"
+    ELASTIC_HOST: "http://localhost:9200"
     CERT: certs/cert.pem
     KEY: certs/key.pem
     FACEBOOK_CALLBACK_URL: https://<domain>/auth/oauth/facebook
@@ -345,7 +346,6 @@ builder:
     REPO_NAME: <REPO_NAME>
     DOCKER_LABEL: <DOCKER_LABEL>
     PRIVATE_ECR: "false"
-    ELASTIC_HOST: "elasticsearch-master:9200"
     STORAGE_PROVIDER: aws
     STORAGE_AWS_ACCESS_KEY_ID: <S3_USER_ACCESS_KEY>
     STORAGE_AWS_ACCESS_KEY_SECRET: <S3_USER_SECRET>
