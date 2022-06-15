@@ -103,6 +103,7 @@ export const serializeModel: ComponentSerializeFunction = (entity) => {
       textureOverride: component.textureOverride,
       materialOverrides: overrides,
       matrixAutoUpdate: component.matrixAutoUpdate,
+      useBasicMaterial: component.useBasicMaterial,
       isUsingGPUInstancing: component.isUsingGPUInstancing,
       isDynamicObject: component.isDynamicObject
     }
