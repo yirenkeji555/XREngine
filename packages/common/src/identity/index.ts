@@ -9,22 +9,23 @@ const DEFAULT_LOADER = securityLoader()
 // Used to generate did:key from secret seed
 const didKeyDriver = didKey.driver()
 
-interface IPublicKeyDescription {
+export interface IKeyPairDescription {
   id: string
   type: string
   controller: string
   publicKeyMultibase: string
+  privateKeyMultibase?: string
 }
 
 interface IDidDocument {
   '@context': string | string[]
   id: string
-  verificationMethod?: IPublicKeyDescription | IPublicKeyDescription[]
-  authentication?: string | string[] | IPublicKeyDescription | IPublicKeyDescription[]
-  assertionMethod?: string | string[] | IPublicKeyDescription | IPublicKeyDescription[]
-  capabilityDelegation?: string | string[] | IPublicKeyDescription | IPublicKeyDescription[]
-  capabilityInvocation?: string | string[] | IPublicKeyDescription | IPublicKeyDescription[]
-  keyAgreement?: string | string[] | IPublicKeyDescription | IPublicKeyDescription[]
+  verificationMethod?: IKeyPairDescription | IKeyPairDescription[]
+  authentication?: string | string[] | IKeyPairDescription | IKeyPairDescription[]
+  assertionMethod?: string | string[] | IKeyPairDescription | IKeyPairDescription[]
+  capabilityDelegation?: string | string[] | IKeyPairDescription | IKeyPairDescription[]
+  capabilityInvocation?: string | string[] | IKeyPairDescription | IKeyPairDescription[]
+  keyAgreement?: string | string[] | IKeyPairDescription | IKeyPairDescription[]
   service: any | any[]
 }
 
