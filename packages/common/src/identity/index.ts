@@ -4,7 +4,7 @@ import vcjs from '@digitalcredentials/vc'
 
 import { securityLoader } from '../documentLoader'
 
-const DEFAULT_LOADER = securityLoader()
+const DEFAULT_LOADER = securityLoader().build()
 
 // Used to generate did:key from secret seed
 const didKeyDriver = didKey.driver()

@@ -42,6 +42,7 @@
     "@digitalbazaar/security-document-loader": "^2.0.0",
     "@digitalcredentials/bnid": "^2.1.2",
     "@digitalcredentials/did-method-key": "^2.0.3",
+    "@digitalcredentials/ed25519-signature-2020": "^3.0.2",
     "@interop/did-web-resolver": "^2.2.1",
     "crypto-ld": "^6.0.0"
   }
