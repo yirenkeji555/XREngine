@@ -35,6 +35,15 @@ interface IDidDocumentGenerateResult {
   methodFor: (options: object) => object
 }
 
+/**
+ * Deterministically generates a DID Document and its corresponding public/private
+ * key pairs from a provided secret key seed.
+ *
+ * @param secretKeySeed {string} - A multibase-encoded string, encoding a byte
+ *   array from which a key can be deterministically generated.
+ * @param didMethod {string} - A DID Method id, e.g. 'key' for 'did:key', etc.
+ * @param [url] {string} - Placeholder, used for did:web type DIDs.
+ */
 export async function generateDid(
   secretKeySeed: string,
   didMethod: string = 'key',
@@ -49,10 +58,28 @@ export async function generateDid(
   }
 }
 
-export async function issueCredential(unsignedCredential: any, suite: any, documentLoader: any = DEFAULT_LOADER) {
-  return vcjs.issue({ credential: unsignedCredential, suite, documentLoader })
+/**
+ * Issues (signs) and returns an unsigned credential that is passed in.
+ *
+ * @param unsignedCredential {object} - An unsigned Verifiable Credential object.
+ * @param cryptoSuite {LinkedDataSignature} - A Linked Data Integrity crypto suite
+ *   containing a signer function (a local public/private key pair, or a handle on
+ *   a remote KMS key).
+ * @param [documentLoader] {function} - Required for any JSON-LD operations, the
+ *   loader fetches @contexts securely, provides key object descriptions, etc.
+ */
+export async function issueCredential(unsignedCredential: any, cryptoSuite: any, documentLoader: any = DEFAULT_LOADER) {
+  return vcjs.issue({ credential: unsignedCredential, suite: cryptoSuite, documentLoader })
 }
 
+/**
+ * Decodes a secret key seed (typically passed in via ENV vars or other secret
+ * management mechanisms) and turns it into a byte array, suitable for using
+ * as a key seed for cryptographic generate() functions.
+ *
+ * @param secretKeySeed {string} - A multibase-encoded string, encoding a byte
+ *   array from which a key can be deterministically generated.
+ */
 function decodeSeed(secretKeySeed: string): Uint8Array {
   let secretKeySeedBytes: Uint8Array
   if (secretKeySeed.startsWith('z')) {
