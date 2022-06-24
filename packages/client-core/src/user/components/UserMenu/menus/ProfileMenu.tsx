@@ -368,7 +368,31 @@ const ProfileMenu = ({ className, hideLogin, changeActiveMenu, setProfileMenuOpe
     console.log('Result of receiving via store() request:', result)
   }
 
-  async function handleRequestCredentialClick() {}
+  async function handleRequestCredentialClick() {
+    const vcRequestQuery: any = {
+      web: {
+        VerifiablePresentation: {
+          query: [
+            {
+              type: 'QueryByExample',
+              credentialQuery: [
+                {
+                  example: {
+                    '@context': ['https://www.w3.org/2018/credentials/v1', 'https://w3id.org/xr/v1'],
+                    type: 'VerifiableCredential'
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+
+    const result = await navigator.credentials.get(vcRequestQuery)
+
+    console.log('VC Request query result:', result)
+  }
 
   async function handleWalletLoginClick() {
     const domain = window.location.origin
@@ -707,15 +731,19 @@ const ProfileMenu = ({ className, hideLogin, changeActiveMenu, setProfileMenuOpe
                 </Typography>
 
                 {enableWalletLogin ? (
-                  <Button onClick={() => handleWalletLoginClick()} className={styles.walletBtn}>
-                    {t('user:usermenu.profile.loginWithXRWallet')}
-                  </Button>
-                  <Button onClick={() => handleIssueCredentialClick()} className={styles.walletBtn}>
-                    Issue a VC
-                  </Button>
-                  <Button onClick={() => handleRequestCredentialClick()} className={styles.walletBtn}>
-                  Request a VC
-                  </Button>
+                  <div>
+                    <Button onClick={() => handleWalletLoginClick()} className={styles.walletBtn}>
+                      {t('user:usermenu.profile.loginWithXRWallet')}
+                    </Button>
+
+                    <Button onClick={() => handleIssueCredentialClick()} className={styles.walletBtn}>
+                      Issue a VC
+                    </Button>
+
+                    <Button onClick={() => handleRequestCredentialClick()} className={styles.walletBtn}>
+                      Request a VC
+                    </Button>
+                  </div>
                 ) : (
                   <Button onClick={() => changeActiveMenu(Views.ReadyPlayer)} className={styles.walletBtn}>
                     {t('user:usermenu.profile.loginWithReadyPlayerMe')}
