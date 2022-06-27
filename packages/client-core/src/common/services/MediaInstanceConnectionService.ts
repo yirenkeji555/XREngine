@@ -128,9 +128,10 @@ export const MediaInstanceConnectionService = {
     dispatchAction(
       MediaInstanceConnectionAction.enableVideo({
         instanceId,
-        currentLocation?.locationSetting?.videoEnabled?.value === true ||
+        enableVideo:
+          currentLocation?.locationSetting?.videoEnabled?.value === true ||
           !(currentLocation?.locationSetting?.locationType?.value === 'showroom')
-      )
+      })
     )
 
     await network.initialize({ port, ipAddress, channelId })
