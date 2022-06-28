@@ -20,7 +20,7 @@ import TextField from '@mui/material/TextField'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 
-import { AuthSettingsService, useAuthSettingState } from '../../../../admin/services/Setting/AuthSettingService'
+import { useAuthSettingState } from '../../../../admin/services/Setting/AuthSettingService'
 import { DiscordIcon } from '../../../../common/components/Icons/DiscordIcon'
 import { FacebookIcon } from '../../../../common/components/Icons/FacebookIcon'
 import { GoogleIcon } from '../../../../common/components/Icons/GoogleIcon'
@@ -166,9 +166,9 @@ const ProfileMenu = ({ className, hideLogin, changeActiveMenu, setProfileMenuOpe
 
   const loadCredentialHandler = async () => {
     try {
-      const mediator = `${globalThis.process.env['VITE_MEDIATOR_SERVER']}/mediator?origin=${encodeURIComponent(
-        window.location.origin
-      )}`
+      const mediator =
+        globalThis.process.env['VITE_MEDIATOR_SERVER'] +
+        `/mediator?origin=${encodeURIComponent(window.location.origin)}`
 
       await polyfill.loadOnce(mediator)
       console.log('Ready to work with credentials!')
@@ -354,6 +354,9 @@ const ProfileMenu = ({ className, hideLogin, changeActiveMenu, setProfileMenuOpe
     if (userId && token)
       window.open(`${globalThis.process.env['VITE_ETH_MARKETPLACE']}?data=${userId}&token=${token}`, '_blank')
   }
+
+  const enableWalletLogin = !!globalThis.process.env['VITE_LOGIN_WITH_WALLET']
+
   const enableSocial =
     authState?.discord ||
     authState?.facebook ||
@@ -609,21 +612,25 @@ const ProfileMenu = ({ className, hideLogin, changeActiveMenu, setProfileMenuOpe
                 </form>
               </section>
             )}
-            {userRole === 'guest' && changeActiveMenu != null && (
+            {userRole === 'guest' && changeActiveMenu && (
               <section className={styles.walletSection}>
                 <Typography variant="h3" className={styles.textBlock}>
                   {t('user:usermenu.profile.or')}
                 </Typography>
-                <Button onClick={() => handleWalletLoginClick()} className={styles.walletBtn}>
-                  {t('user:usermenu.profile.loginWithXRWallet')}
-                </Button>
-                {/*<Button onClick={() => changeActiveMenu(Views.ReadyPlayer)} className={styles.walletBtn}>*/}
-                {/*  {t('user:usermenu.profile.loginWithReadyPlayerMe')}*/}
-                {/*</Button>*/}
+
+                {enableWalletLogin ? (
+                  <Button onClick={() => handleWalletLoginClick()} className={styles.walletBtn}>
+                    {t('user:usermenu.profile.loginWithXRWallet')}
+                  </Button>
+                ) : (
+                  <Button onClick={() => changeActiveMenu(Views.ReadyPlayer)} className={styles.walletBtn}>
+                    {t('user:usermenu.profile.loginWithReadyPlayerMe')}
+                  </Button>
+                )}
               </section>
             )}
 
-            {enableSocial && (
+            {enableSocial && !enableWalletLogin && (
               <section className={styles.socialBlock}>
                 {selfUser?.userRole.value === 'guest' && (
                   <Typography variant="h3" className={styles.textBlock}>
@@ -711,7 +718,7 @@ const ProfileMenu = ({ className, hideLogin, changeActiveMenu, setProfileMenuOpe
                 )}
               </section>
             )}
-            {setProfileMenuOpen != null && (
+            {setProfileMenuOpen && (
               <div className={styles.closeButton} onClick={() => setProfileMenuOpen(false)}>
                 <Close />
               </div>
