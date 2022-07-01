@@ -752,7 +752,7 @@ const ProfileMenu = ({ className, hideLogin, changeActiveMenu, setProfileMenuOpe
               </section>
             )}
 
-            {enableSocial && !enableWalletLogin && (
+            {enableSocial && (
               <section className={styles.socialBlock}>
                 {selfUser?.userRole.value === 'guest' && (
                   <Typography variant="h3" className={styles.textBlock}>
